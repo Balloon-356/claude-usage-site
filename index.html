@@ -68,7 +68,7 @@ svg text{fill:var(--muted);font-size:11px}
 
 <section><h2>账号使用时段<small id="srv-sub"></small></h2><div class="chart" id="srv"></div></section>
 
-<section><h2>本机用量<small id="bars-sub"></small></h2><div class="chart" id="bars"></div></section>
+<section><h2>本机用量<small id="bars-sub"></small></h2><div class="cards" id="tot"></div><div class="chart" id="bars" style="margin-top:12px"></div></section>
 </main>
 <script>
 // data.json from the data branch, fetched on load and every 5 minutes (see pages_publish.py's docstring)
@@ -211,6 +211,11 @@ function barChart(){
   const bars = Array.from({length: n}, (_, i) => ({t: start + i*size, me: 0, other: 0, meUsd: 0, otherUsd: 0}));
   for (const r of D.bars) {const i = Math.floor((r[0]*H - start)/size); if (i < 0 || i >= n) continue;
     const b = bars[i]; b.me += r[1]; b.meUsd += r[2]; b.other += r[3]; b.otherUsd += r[4];}
+  const tok = bars.reduce((s, b) => s + b.me + b.other, 0), cost = bars.reduce((s, b) => s + b.meUsd + b.otherUsd, 0);
+  const span0 = `${fmtT(start)} 至 ${fmtT(R.to)}`;
+  document.getElementById('tot').innerHTML =
+    `<div class="card"><div class="tl">累计 token</div><div class="tv">${fmtN(tok)}</div><div class="ts">${span0}，含缓存读写</div></div>`
+    + `<div class="card"><div class="tl">累计费用</div><div class="tv">${usd(cost)}</div><div class="ts">按 API 标价折算，订阅不按这个扣钱</div></div>`;
   const Hh = window.innerWidth < 600 ? 180 : 220, {box,svg,tip,W} = setup('bars', Hh), L = 52, R_ = 12, T = 10, B = 22;
   const max = Math.max(1, ...bars.map(b => b.me + b.other)), bw = (W - L - R_) / n, y = v => T + (1 - v/max) * (Hh - T - B);
   for (const f of [0, .5, 1]) {el('line',{x1:L,x2:W-R_,y1:y(max*f),y2:y(max*f),stroke:css('--line'),'stroke-width':1},svg);
