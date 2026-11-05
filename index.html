@@ -159,7 +159,7 @@ function card(a, k){
   if (!v) return `<div class="card"><div class="tl">${D.names[k]}</div><div class="tv">–</div><div class="ts">网关当前没有返回这个窗口，不沿用旧数字</div></div>`;
   const [p, reset, r, eta] = v;
   let sub = `重置于 ${reset ? fmtT(reset) : '–'}`;
-  if (r !== null) sub += ` · 近 ${k ? '6 小时' : '30 分钟'} ${r >= 0 ? '+' : ''}${r.toFixed(1)}%/h`;
+  if (r !== null) sub += ` · 近 ${D.looks ? D.looks[k] : (k ? '6 小时' : '30 分钟')} ${r >= 0 ? '+' : ''}${r.toFixed(1)}%/h`;
   if (eta) sub += ` · 预计 ${fmtT(eta)} 用完（早于重置）`;
   const lvl = p >= 90 ? 'crit' : p >= 75 ? 'high' : '';
   return `<div class="card${eta ? ' warn' : ''}"><div class="tl">${D.names[k]}</div><div class="tv">${p}%</div>`
@@ -168,7 +168,7 @@ function card(a, k){
 function perAccount(){
   const lg = D.names.map((n, k) => `<span><i style="background:var(--s${k+1})"></i>${n}</span>`).join('');
   document.getElementById('per').innerHTML = D.accts.map((a, i) =>
-    `<section><h2>${a.n}<small>读数时间 ${a.read ? fmtT(a.read) : '–'}</small></h2><div class="cards">${[0, 1, 2].map(k => card(a, k)).join('')}</div>`
+    `<section><h2>${a.n}<small>读数时间 ${a.read ? fmtT(a.read) : '–'}</small></h2><div class="cards">${D.names.map((_, k) => card(a, k)).join('')}</div>`
     + `<h3>额度走势</h3><div class="legend">${lg}</div><div class="chart" id="ch${i}"></div></section>`).join('');
 }
 function lineChart(i){
@@ -234,12 +234,13 @@ function barChart(){
 }
 const ago = s => s < 90 ? '刚刚' : s < 5400 ? `${Math.round(s/60)} 分钟前` : s < 2*DAY ? `${Math.round(s/H)} 小时前` : `${Math.round(s/DAY)} 天前`;
 function acctTable(){
+  if (D.acctSub) document.querySelector('#accts').parentNode.querySelector('h2 small').textContent = D.acctSub;
   const cell = v => v ? `${v[0]}%<small class="muted"> ${v[1] ? fmtT(v[1]) + ' 重置' : '重置时间未知'}</small>` : '–';
   const rows = D.accts.map((a, i) => {const age = NOW - a.served, on = age < 600;
-    return `<tr><td><span style="color:var(--s${i+1})">■</span> ${a.n}</td><td>${cell(a.q[0])}</td><td>${cell(a.q[1])}</td><td>${cell(a.q[2])}</td>`
+    return `<tr><td><span style="color:var(--s${i+1})">■</span> ${a.n}</td>${D.names.map((_, k) => `<td>${cell(a.q[k])}</td>`).join('')}`
       + `<td>${on ? '<b style="color:var(--s3)">使用中</b>' : '空闲'}<small class="muted"> ${a.served ? ago(age) : ''}</small></td></tr>`;}).join('');
   document.getElementById('accts').innerHTML = D.accts.length
-    ? `<div style="overflow-x:auto"><table><thead><tr><th>账号</th><th>5 小时</th><th>本周</th><th>Fable</th><th>状态</th></tr></thead><tbody>${rows}</tbody></table></div><div class="note">百分比后面是该窗口的重置时间（北京时间）。各账号额度读取时间不同，闲置账号的数字可能略旧。</div>`
+    ? `<div style="overflow-x:auto"><table><thead><tr><th>账号</th>${(D.cols || ['5 小时', '本周', 'Fable']).map(c => `<th>${c}</th>`).join('')}<th>状态</th></tr></thead><tbody>${rows}</tbody></table></div><div class="note">百分比后面是该窗口的重置时间（北京时间）。各账号额度读取时间不同，闲置账号的数字可能略旧。</div>`
     : '<p class="empty">网关没有返回账号信息</p>';
 }
 // when each account was serving requests; recording started at D.servedSince, so earlier time is blank
